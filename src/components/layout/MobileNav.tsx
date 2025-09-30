@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface NavItem {
   icon: string;
@@ -32,10 +32,15 @@ export const MobileNav = () => {
 
   const items = showMore ? moreItems : primaryItems;
 
+  // Reset to primary panel when route changes to avoid leaking state
+  useEffect(() => {
+    setShowMore(false);
+  }, [pathname]);
+
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 md:hidden">
+    <div className="md:hidden w-full">
       <div className="glass-strong rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Top strip with toggle */}
+        {/* Toggle Row */}
         <div className="flex items-center justify-between px-4 pt-3 text-xs text-muted">
           <button
             className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
