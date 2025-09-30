@@ -1,0 +1,40 @@
+{
+  "name": "astrotunes",
+  "version": "1.0.0",
+  "description": "پلتفرم حرفه‌ای توزیع موسیقی - موسیقی خود را به کهکشان‌ها بفرستید",
+  "author": "AstroTunes Team",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "next": "15.5.4"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "@eslint/eslintrc": "^3"
+  },
+  "keywords": [
+    "music",
+    "distribution",
+    "streaming",
+    "spotify",
+    "apple-music",
+    "music-platform",
+    "توزیع موسیقی"
+  ]
+}
