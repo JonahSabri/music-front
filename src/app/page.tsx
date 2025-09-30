@@ -232,13 +232,18 @@ export default function Home() {
               قیمت‌گذاری شفاف
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {[
                 { 
                   name: 'رایگان', 
                   price: '۰', 
                   period: 'برای همیشه',
-                  features: ['۱ ترک رایگان', 'انتشار در همه پلتفرم‌ها', '۱۰۰٪ درآمد', 'آمار پایه'],
+                  features: [
+                    'یک ترک رایگان',
+                    'انتشار در همه پلتفرم‌های موسیقی',
+                    'صد درصد درآمد برای شما',
+                    'آمار و گزارش پایه'
+                  ],
                   popular: false,
                   color: 'from-gray-500 to-gray-700'
                 },
@@ -246,17 +251,19 @@ export default function Home() {
                   name: 'حرفه‌ای', 
                   price: '۵۹,۹۰۰', 
                   period: 'سالانه',
-                  features: ['آپلود نامحدود', '۱۰۰٪ درآمد', 'Pre-Save Links', 'YouTube Content ID', 'Splits', 'آمار پیشرفته', 'Shazam & Siri', 'Store Maximizer', 'پشتیبانی ۲۴/۷'],
+                  features: [
+                    'آپلود نامحدود آهنگ و آلبوم',
+                    'صد درصد درآمد برای شما',
+                    'لینک‌های پیش ذخیره (Pre-Save)',
+                    'شناسایی محتوای یوتیوب (Content ID)',
+                    'تقسیم درآمد بین همکاران (Splits)',
+                    'آمار و تحلیل پیشرفته',
+                    'یکپارچگی با Shazam و Siri',
+                    'بهینه‌ساز فروشگاه (Store Maximizer)',
+                    'پشتیبانی ۲۴ ساعته و ۷ روزه'
+                  ],
                   popular: true,
                   color: 'from-nebula to-nebula-purple-light'
-                },
-                { 
-                  name: 'لیبل', 
-                  price: '۱۹۹,۰۰۰', 
-                  period: 'سالانه',
-                  features: ['همه ویژگی‌های حرفه‌ای', 'مدیریت نامحدود هنرمند', 'White Label', 'API Access', 'مدیر اختصاصی', 'گزارش‌های تخصصی', 'امکانات سفارشی'],
-                  popular: false,
-                  color: 'from-supernova to-yellow-600'
                 }
               ].map((plan, index) => (
                 <GlassCard key={index} variant={plan.popular ? 'hover-glow' : 'default'} className={`relative p-8 ${plan.popular ? 'glow-purple scale-105' : ''}`} animated>

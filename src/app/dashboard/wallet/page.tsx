@@ -1,5 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 
 export default function WalletPage() {
   const earnings = [
@@ -11,7 +13,8 @@ export default function WalletPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+      <AnimatedBackground />
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-starlight mb-2" style={{fontFamily: 'var(--font-display)'}}>
@@ -23,7 +26,7 @@ export default function WalletPage() {
         </div>
 
         {/* Balance Card */}
-        <div className="gradient-cosmic rounded-2xl p-8 mb-8 glow-purple border border-nebula/50">
+        <GlassCard variant="hover-glow" className="gradient-cosmic p-8 mb-8" animated>
           <div className="flex items-center justify-between">
             <div>
               <div className="text-muted mb-2">موجودی قابل برداشت</div>
@@ -34,31 +37,31 @@ export default function WalletPage() {
             </div>
             <div className="text-9xl opacity-20">💰</div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+          <GlassCard variant="hover-glow" className="p-6" animated>
             <div className="text-muted mb-2">درآمد این ماه</div>
             <div className="text-3xl font-bold text-starlight">$234.50</div>
             <div className="text-green-400 text-sm mt-2">+12% نسبت به ماه قبل</div>
-          </div>
+          </GlassCard>
           
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+          <GlassCard variant="hover-glow" className="p-6" animated>
             <div className="text-muted mb-2">کل درآمد</div>
             <div className="text-3xl font-bold text-starlight">$5,678.90</div>
             <div className="text-muted text-sm mt-2">از ابتدا تاکنون</div>
-          </div>
+          </GlassCard>
           
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+          <GlassCard variant="hover-glow" className="p-6" animated>
             <div className="text-muted mb-2">آخرین برداشت</div>
             <div className="text-3xl font-bold text-starlight">$500.00</div>
             <div className="text-muted text-sm mt-2">۱۵ اسفند ۱۴۰۳</div>
-          </div>
+          </GlassCard>
         </div>
 
         {/* Earnings Chart */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 mb-8">
+        <GlassCard variant="default" className="p-6 mb-8" animated>
           <h2 className="text-2xl font-bold text-starlight mb-6">نمودار درآمد ماهانه</h2>
           <div className="h-64 flex items-end justify-between space-x-2">
             {[120, 150, 90, 180, 210, 190, 234].map((value, index) => (
@@ -72,10 +75,10 @@ export default function WalletPage() {
               </div>
             ))}
           </div>
-        </div>
+        </GlassCard>
 
         {/* Detailed Earnings Table */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <GlassCard variant="default" className="overflow-hidden" animated>
           <div className="px-6 py-4 border-b border-white/10">
             <h2 className="text-2xl font-bold text-starlight">جزئیات درآمدها</h2>
           </div>
@@ -99,26 +102,35 @@ export default function WalletPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </GlassCard>
 
-        {/* Payment Settings */}
-        <div className="mt-8 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
-          <h2 className="text-2xl font-bold text-starlight mb-4">تنظیمات پرداخت</h2>
+        {/* Payment Settings - TRC20 Wallet */}
+        <GlassCard variant="default" className="mt-8 p-6" animated>
+          <h2 className="text-2xl font-bold text-starlight mb-4">تنظیمات پرداخت (Crypto - TRC20)</h2>
           <p className="text-muted mb-6">
-            اطلاعات حساب بانکی یا PayPal خود را برای دریافت پرداخت‌ها وارد کنید
+            برای تسویه‌حساب دلاری، آدرس ولت USDT شبکه TRON (TRC20) خود را ثبت کنید. حتماً قبل از ثبت، آدرس را دوباره بررسی کنید.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline">
-              🏦 افزودن حساب بانکی
-            </Button>
-            <Button variant="outline">
-              <svg className="w-5 h-5 inline ml-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 00-.794.68l-.04.22-.63 3.993-.028.15a.804.804 0 01-.793.68H7.76c-.414 0-.736-.336-.66-.748l1.575-9.98c.058-.368.374-.644.744-.644h5.106c3.238 0 5.774-1.314 6.514-5.12.256-1.313.192-2.447-.3-3.327a3.567 3.567 0 00-1.183-1.177c.472.714.68 1.613.496 2.68z"/>
-              </svg>
-              افزودن PayPal
-            </Button>
-          </div>
-        </div>
+          <form className="space-y-4">
+            <div>
+              <label className="block text-starlight font-medium mb-2">USDT (TRC20) Wallet Address</label>
+              <input type="text" placeholder="Txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-starlight font-medium mb-2">Full Name (Latin)</label>
+                <input type="text" placeholder="John Doe" className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50" />
+              </div>
+              <div>
+                <label className="block text-starlight font-medium mb-2">Email for Payment Notices</label>
+                <input type="email" placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-muted text-sm">حداقل مبلغ برداشت: 50 USDT • کارمزد شبکه به عهده کاربر است</div>
+              <Button variant="primary" glow className="px-6">💾 ذخیره تنظیمات</Button>
+            </div>
+          </form>
+        </GlassCard>
       </div>
     </DashboardLayout>
   );

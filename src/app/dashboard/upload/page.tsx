@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -62,7 +64,8 @@ export default function UploadMusicPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto">
+      <AnimatedBackground />
+      <div className="max-w-5xl mx-auto relative z-10">
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -93,7 +96,7 @@ export default function UploadMusicPage() {
         </div>
 
         {/* Form Content */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8">
+        <GlassCard variant="default" className="p-8" animated>
           {/* Step 1: Release Information */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -170,7 +173,7 @@ export default function UploadMusicPage() {
                   id="artistName"
                   defaultValue="علی احمدی"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="نام هنرمند اصلی"
+                  placeholder="Artist Name"
                 />
               </div>
 
@@ -183,7 +186,7 @@ export default function UploadMusicPage() {
                   type="text"
                   id="featuredArtists"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="نام هنرمندان همکار را با کاما جدا کنید"
+                  placeholder="Featured Artists (comma separated)"
                 />
               </div>
 
@@ -212,7 +215,7 @@ export default function UploadMusicPage() {
                   id="label"
                   defaultValue="علی احمدی"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="پیش‌فرض: نام هنرمند"
+                  placeholder="Label Name (default: Artist Name)"
                 />
               </div>
             </div>
@@ -253,7 +256,7 @@ export default function UploadMusicPage() {
                   type="text"
                   id="albumTitle"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="نام اثر خود را وارد کنید"
+                  placeholder="Album or EP Title"
                 />
               </div>
 
@@ -339,7 +342,7 @@ export default function UploadMusicPage() {
                   type="text"
                   id="trackTitle"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="نام آهنگ"
+                  placeholder="Track Title"
                 />
               </div>
 
@@ -415,7 +418,7 @@ export default function UploadMusicPage() {
                   type="text"
                   id="previewStart"
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="مثال: 01:15"
+                  placeholder="e.g. 01:15"
                 />
               </div>
 
@@ -582,8 +585,10 @@ export default function UploadMusicPage() {
               </Button>
             )}
           </div>
+        </GlassCard>
+        
         </div>
-      </div>
+      
     </DashboardLayout>
   );
 }
