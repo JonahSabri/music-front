@@ -1,4 +1,5 @@
 import { DashboardSidebar } from './DashboardSidebar';
+import { MobileNav } from './MobileNav';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -44,6 +45,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="p-8">
           {children}
         </div>
+
+        {/* Mobile Bottom Nav */}
+        <MobileNav />
       </main>
     </div>
   );
