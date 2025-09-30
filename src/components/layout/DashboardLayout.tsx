@@ -43,12 +43,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         {/* Content */}
         <div className="p-8">
-          {/* Mobile Nav inside content area */}
-          <div className="mb-4 md:hidden">
-            <MobileNav />
-          </div>
           {children}
         </div>
+
+        {/* Mobile Bottom Nav */}
+        <MobileNav />
       </main>
     </div>
   );
