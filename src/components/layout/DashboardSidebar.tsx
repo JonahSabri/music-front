@@ -16,7 +16,7 @@ export const DashboardSidebar = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed right-0 top-0 h-screen w-64 bg-void/50 backdrop-blur-xl border-l border-white/10 z-40">
+    <aside className="fixed right-0 top-0 h-screen w-64 bg-void/50 backdrop-blur-xl border-l border-white/10 z-40 hidden md:block">
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-6 border-b border-white/10">

@@ -57,7 +57,7 @@ export const MobileNav = () => {
         </div>
 
         {/* Items */}
-        <div className={`grid grid-cols-5 gap-1 px-2 pb-2 transition-all duration-300 ${showMore ? 'animate-slide-up' : 'animate-fade-in'}`}>
+        <div key={showMore ? 'more' : 'primary'} className={`grid grid-cols-5 gap-1 px-2 pb-2 transition-all duration-300 ${showMore ? 'animate-slide-up' : 'animate-fade-in'}`}>
           {items.map((item) => {
             const active = pathname === item.href;
             return (

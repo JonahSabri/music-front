@@ -10,7 +10,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen">
       <DashboardSidebar />
       
-      <main className="mr-64 min-h-screen bg-gradient-to-br from-deep-space via-deep-space to-galaxy">
+      <main className="md:mr-64 min-h-screen bg-gradient-to-br from-deep-space via-deep-space to-galaxy">
         {/* Top Bar */}
         <div className="sticky top-0 z-30 bg-void/50 backdrop-blur-xl border-b border-white/10">
           <div className="px-8 py-4 flex items-center justify-between">
