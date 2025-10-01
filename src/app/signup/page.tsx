@@ -5,20 +5,60 @@ import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
+    username: '',
     artistName: '',
     email: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false
   });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic
-    console.log('Signup:', formData);
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('رمز عبور و تکرار آن باید یکسان باشند');
+      return;
+    }
+
+    if (!formData.acceptTerms) {
+      setError('لطفا قوانین و مقررات را بپذیرید');
+      return;
+    }
+
+    setIsLoading(true);
+
+    const registerData: any = {
+      username: formData.username || formData.email.split('@')[0],
+      email: formData.email,
+      password: formData.password,
+      password2: formData.confirmPassword,
+    };
+    
+    // Only include artist_name if it's not empty
+    if (formData.artistName && formData.artistName.trim()) {
+      registerData.artist_name = formData.artistName.trim();
+    }
+
+    const result = await register(registerData);
+
+    if (result.success) {
+      router.push('/dashboard');
+    } else {
+      setError(result.error || 'خطا در ثبت نام');
+    }
+
+    setIsLoading(false);
   };
 
   return (
@@ -48,10 +88,17 @@ export default function SignupPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Artist Name */}
             <div>
               <label htmlFor="artistName" className="block text-starlight font-medium mb-2">
-                نام هنری / گروه
+                نام هنری / گروه (اختیاری)
               </label>
               <input
                 type="text"
@@ -60,8 +107,9 @@ export default function SignupPage() {
                 onChange={(e) => setFormData({...formData, artistName: e.target.value})}
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50 transition-all"
                 placeholder="نام هنری خود را وارد کنید"
-                required
+                disabled={isLoading}
               />
+              <p className="text-muted text-xs mt-1">⚠️ پس از اولین آپلود قابل تغییر نیست</p>
             </div>
 
             {/* Email */}
@@ -77,6 +125,7 @@ export default function SignupPage() {
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50 transition-all"
                 placeholder="artist@example.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -94,6 +143,7 @@ export default function SignupPage() {
                 placeholder="حداقل 8 کاراکتر"
                 required
                 minLength={8}
+                disabled={isLoading}
               />
             </div>
 
@@ -110,6 +160,7 @@ export default function SignupPage() {
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50 transition-all"
                 placeholder="رمز عبور را دوباره وارد کنید"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -129,8 +180,8 @@ export default function SignupPage() {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" variant="primary" className="w-full" size="lg" glow>
-              ثبت نام رایگان
+            <Button type="submit" variant="primary" className="w-full" size="lg" glow disabled={isLoading}>
+              {isLoading ? 'در حال ثبت نام...' : 'ثبت نام رایگان'}
             </Button>
 
             {/* Google Signup */}

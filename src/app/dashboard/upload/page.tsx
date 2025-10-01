@@ -1,34 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { useNotification } from '@/components/ui/Notification';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function UploadMusicPage() {
+  const router = useRouter();
+  const { user, authLoading } = useAuth();
+  const { addNotification } = useNotification();
   const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [canUpload, setCanUpload] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
+  
   const [formData, setFormData] = useState({
     // Step 1: Release Information
-    platforms: ['spotify', 'apple', 'amazon'],
+    platforms: ['spotify', 'apple', 'amazon', 'youtube', 'tiktok'],
     releaseType: 'single',
     previouslyReleased: false,
-    artistName: 'علی احمدی',
+    artistName: '',
     featuredArtists: '',
     releaseDate: '',
-    label: 'علی احمدی',
+    label: '',
     
     // Step 2: Track & Artwork
-    coverArt: null,
+    coverArt: null as File | null,
     language: 'persian',
     primaryGenre: 'pop',
-    secondaryGenre: 'dance-pop',
+    secondaryGenre: '',
     albumTitle: '',
     
     // Step 3: Audio Files
-    tracks: [],
+    audioFile: null as File | null,
+    trackTitle: '',
+    isCover: false,
+    composer: '',
+    lyricist: '',
+    arranger: '',
+    isExplicit: false,
+    isInstrumental: false,
+    lyrics: '',
+    previewStart: '',
     
     // Step 4: Optional Extras
     shazam: false,
@@ -40,6 +61,42 @@ export default function UploadMusicPage() {
     confirmNoUnauthorized: false,
     acceptTerms: false
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    if (!authLoading && !user) {
+      router.push('/login');
+    } else if (user) {
+      checkUploadPermission();
+    }
+  }, [user, authLoading, router, mounted]);
+
+  const checkUploadPermission = async () => {
+    try {
+      const result = await api.canUploadTrack();
+      if (result.data && !result.error) {
+        setCanUpload(result.data);
+        
+        if (result.data) {
+          setFormData(prev => ({
+            ...prev,
+            artistName: result.data.artist_name || user?.artist_name || '',
+            label: result.data.artist_name || user?.artist_name || ''
+          }));
+        }
+      } else {
+        setCanUpload({ can_upload: false, message: result.error || 'خطا در بررسی مجوز آپلود' });
+      }
+    } catch (error) {
+      console.error('Upload permission check failed:', error);
+      setCanUpload({ can_upload: false, message: 'خطا در بررسی مجوز آپلود' });
+    }
+  };
 
   const steps = [
     { number: 1, title: 'اطلاعات اولیه' },
@@ -57,10 +114,140 @@ export default function UploadMusicPage() {
     if (currentStep > 1) setCurrentStep((currentStep - 1) as Step);
   };
 
-  const handleSubmit = () => {
-    console.log('Submitting:', formData);
-    // Handle final submission
+  const validateForm = () => {
+    const errors = [];
+    
+    if (!formData.artistName.trim()) {
+      errors.push('نام هنری الزامی است');
+    }
+    
+    if (!formData.trackTitle.trim() && !formData.albumTitle.trim()) {
+      errors.push('عنوان آهنگ یا آلبوم الزامی است');
+    }
+    
+    if (!formData.releaseDate) {
+      errors.push('تاریخ انتشار الزامی است');
+    }
+    
+    if (!formData.audioFile) {
+      errors.push('فایل صوتی الزامی است');
+    }
+    
+    if (!formData.coverArt) {
+      errors.push('کاور آرت الزامی است');
+    }
+    
+    if (!formData.confirmRights) {
+      errors.push('لطفا مالکیت حقوق را تایید کنید');
+    }
+    
+    if (!formData.acceptTerms) {
+      errors.push('لطفا قوانین و مقررات را بپذیرید');
+    }
+    
+    return errors;
   };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setError('');
+
+    // Validate form
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(' • '));
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const submitData = new FormData();
+      
+      // Required fields
+      submitData.append('title', formData.trackTitle || formData.albumTitle);
+      submitData.append('artist_name', formData.artistName);
+      submitData.append('release_type', formData.releaseType);
+      submitData.append('release_date', formData.releaseDate);
+      submitData.append('language', formData.language);
+      submitData.append('primary_genre', formData.primaryGenre);
+      submitData.append('platforms', JSON.stringify(formData.platforms));
+      
+      // Files
+      submitData.append('audio_file', formData.audioFile!);
+      submitData.append('cover_art', formData.coverArt!);
+
+      // Optional fields
+      if (formData.albumTitle) submitData.append('album_title', formData.albumTitle);
+      if (formData.featuredArtists) submitData.append('featured_artists', formData.featuredArtists);
+      if (formData.secondaryGenre) submitData.append('secondary_genre', formData.secondaryGenre);
+      if (formData.composer) submitData.append('composer', formData.composer);
+      if (formData.lyricist) submitData.append('lyricist', formData.lyricist);
+      if (formData.arranger) submitData.append('arranger', formData.arranger);
+      if (formData.label) submitData.append('label', formData.label);
+      if (formData.lyrics) submitData.append('lyrics', formData.lyrics);
+      
+      // Booleans
+      submitData.append('is_explicit', formData.isExplicit.toString());
+      submitData.append('is_instrumental', formData.isInstrumental.toString());
+      submitData.append('is_cover', formData.isCover.toString());
+      submitData.append('previously_released', formData.previouslyReleased.toString());
+      submitData.append('shazam_enabled', formData.shazam.toString());
+      submitData.append('store_maximizer_enabled', formData.storeMaximizer.toString());
+      submitData.append('youtube_content_id_enabled', formData.youtubeContentId.toString());
+
+      const result = await api.uploadTrack(submitData);
+      
+      if (result.data && !result.error) {
+        addNotification({
+          type: 'success',
+          title: 'آپلود موفق',
+          message: 'ترک با موفقیت آپلود شد و برای بررسی ارسال گردید!'
+        });
+        router.push('/dashboard/music');
+      } else {
+        setError(result.error || 'خطا در آپلود ترک');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      addNotification({
+        type: 'error',
+        title: 'خطا در آپلود',
+        message: 'خطا در آپلود ترک. لطفا دوباره تلاش کنید.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Show loading while checking permissions
+  if (!mounted || authLoading || !canUpload) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-starlight text-xl">در حال بررسی مجوز...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error if can't upload
+  if (!canUpload.can_upload) {
+    return (
+      <DashboardLayout>
+        <AnimatedBackground />
+        <div className="max-w-3xl mx-auto relative z-10 py-20">
+          <GlassCard variant="default" className="p-12 text-center" animated>
+            <div className="text-6xl mb-6">🚫</div>
+            <h1 className="text-3xl font-bold text-starlight mb-4">امکان آپلود وجود ندارد</h1>
+            <p className="text-muted text-lg mb-8">{canUpload.message}</p>
+            <Button variant="primary" glow onClick={() => router.push('/dashboard/settings')}>
+              خرید اشتراک
+            </Button>
+          </GlassCard>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -97,6 +284,21 @@ export default function UploadMusicPage() {
 
         {/* Form Content */}
         <GlassCard variant="default" className="p-8" animated>
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400">{error}</p>
+            </div>
+          )}
+
+          {/* Artist Name Warning */}
+          {canUpload.artist_name_locked && (
+            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <p className="text-blue-400">
+                ℹ️ نام هنری شما: <strong>{canUpload.artist_name}</strong> (قابل تغییر نیست)
+              </p>
+            </div>
+          )}
+
           {/* Step 1: Release Information */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -130,14 +332,28 @@ export default function UploadMusicPage() {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="flex items-center p-4 rounded-lg bg-white/5 border-2 border-nebula cursor-pointer">
-                    <input type="radio" name="releaseType" defaultChecked className="ml-2" />
+                    <input 
+                      type="radio" 
+                      name="releaseType" 
+                      value="single"
+                      checked={formData.releaseType === 'single'}
+                      onChange={(e) => setFormData({...formData, releaseType: e.target.value})}
+                      className="ml-2" 
+                    />
                     <div>
                       <div className="text-starlight font-medium">تک‌آهنگ (Single)</div>
                       <div className="text-muted text-sm">یک آهنگ</div>
                     </div>
                   </label>
                   <label className="flex items-center p-4 rounded-lg bg-white/5 border border-white/10 hover:border-nebula cursor-pointer">
-                    <input type="radio" name="releaseType" className="ml-2" />
+                    <input 
+                      type="radio" 
+                      name="releaseType" 
+                      value="album"
+                      checked={formData.releaseType === 'album'}
+                      onChange={(e) => setFormData({...formData, releaseType: e.target.value})}
+                      className="ml-2" 
+                    />
                     <div>
                       <div className="text-starlight font-medium">آلبوم / EP</div>
                       <div className="text-muted text-sm">چند آهنگ</div>
@@ -153,11 +369,23 @@ export default function UploadMusicPage() {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="flex items-center p-4 rounded-lg bg-white/5 border border-white/10 hover:border-nebula cursor-pointer">
-                    <input type="radio" name="previouslyReleased" className="ml-2" />
+                    <input 
+                      type="radio" 
+                      name="previouslyReleased" 
+                      checked={formData.previouslyReleased === true}
+                      onChange={() => setFormData({...formData, previouslyReleased: true})}
+                      className="ml-2" 
+                    />
                     <span className="text-starlight">بله</span>
                   </label>
                   <label className="flex items-center p-4 rounded-lg bg-white/5 border-2 border-nebula cursor-pointer">
-                    <input type="radio" name="previouslyReleased" defaultChecked className="ml-2" />
+                    <input 
+                      type="radio" 
+                      name="previouslyReleased" 
+                      checked={formData.previouslyReleased === false}
+                      onChange={() => setFormData({...formData, previouslyReleased: false})}
+                      className="ml-2" 
+                    />
                     <span className="text-starlight">خیر</span>
                   </label>
                 </div>
@@ -171,10 +399,15 @@ export default function UploadMusicPage() {
                 <input
                   type="text"
                   id="artistName"
-                  defaultValue="علی احمدی"
+                  value={formData.artistName}
+                  onChange={(e) => setFormData({...formData, artistName: e.target.value})}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
                   placeholder="Artist Name"
+                  disabled={canUpload.artist_name_locked}
                 />
+                {canUpload.artist_name_locked && (
+                  <p className="text-muted text-xs mt-1">⚠️ نام هنری قفل شده است</p>
+                )}
               </div>
 
               {/* Featured Artists */}
@@ -198,7 +431,10 @@ export default function UploadMusicPage() {
                 <input
                   type="date"
                   id="releaseDate"
+                  value={formData.releaseDate}
+                  onChange={(e) => setFormData({...formData, releaseDate: e.target.value})}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                  required
                 />
                 <p className="text-muted text-sm mt-2">
                   💡 برای Pre-Save حداقل ۴ هفته آینده را انتخاب کنید
@@ -213,7 +449,8 @@ export default function UploadMusicPage() {
                 <input
                   type="text"
                   id="label"
-                  defaultValue="علی احمدی"
+                  value={formData.label}
+                  onChange={(e) => setFormData({...formData, label: e.target.value})}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
                   placeholder="Label Name (default: Artist Name)"
                 />
@@ -231,15 +468,28 @@ export default function UploadMusicPage() {
                 <label className="block text-starlight font-medium mb-3">
                   آپلود کاور آرت
                 </label>
-                <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-nebula transition-colors cursor-pointer bg-white/5">
+                <div 
+                  className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-nebula transition-colors cursor-pointer bg-white/5"
+                  onClick={() => document.getElementById('coverArt')?.click()}
+                >
                   <div className="text-6xl mb-4">🎨</div>
                   <div className="text-starlight font-medium mb-2">
-                    فایل خود را اینجا رها کنید یا کلیک کنید
+                    {formData.coverArt ? formData.coverArt.name : 'فایل خود را اینجا رها کنید یا کلیک کنید'}
                   </div>
                   <div className="text-muted text-sm">
                     حداقل 3000x3000 پیکسل • JPG یا PNG
                   </div>
                 </div>
+                <input
+                  type="file"
+                  id="coverArt"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setFormData({...formData, coverArt: file});
+                  }}
+                  className="hidden"
+                />
                 <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                   <p className="text-yellow-400 text-sm">
                     ⚠️ کاور آرت نباید شامل آدرس سایت، لوگوی شبکه‌های اجتماعی یا نوشته‌های تبلیغاتی باشد
@@ -247,18 +497,23 @@ export default function UploadMusicPage() {
                 </div>
               </div>
 
-              {/* Album Title */}
-              <div>
-                <label htmlFor="albumTitle" className="block text-starlight font-medium mb-2">
-                  عنوان آلبوم / تک‌آهنگ
-                </label>
-                <input
-                  type="text"
-                  id="albumTitle"
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="Album or EP Title"
-                />
-              </div>
+              {/* Album Title - Only for Album/EP */}
+              {formData.releaseType === 'album' && (
+                <div>
+                  <label htmlFor="albumTitle" className="block text-starlight font-medium mb-2">
+                    عنوان آلبوم / EP
+                  </label>
+                  <input
+                    type="text"
+                    id="albumTitle"
+                    value={formData.albumTitle}
+                    onChange={(e) => setFormData({...formData, albumTitle: e.target.value})}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                    placeholder="Album or EP Title"
+                    required
+                  />
+                </div>
+              )}
 
               {/* Language */}
               <div>
@@ -285,14 +540,32 @@ export default function UploadMusicPage() {
                   </label>
                   <select
                     id="primaryGenre"
+                    value={formData.primaryGenre}
+                    onChange={(e) => setFormData({...formData, primaryGenre: e.target.value})}
                     className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
                   >
-                    <option>Pop</option>
-                    <option>Rock</option>
-                    <option>Hip Hop</option>
-                    <option>Electronic</option>
-                    <option>Classical</option>
-                    <option>Jazz</option>
+                    <option value="pop">پاپ</option>
+                    <option value="rock">راک</option>
+                    <option value="hip-hop">هیپ‌هاپ</option>
+                    <option value="electronic">الکترونیک</option>
+                    <option value="classical">کلاسیک</option>
+                    <option value="jazz">جاز</option>
+                    <option value="country">کانتری</option>
+                    <option value="folk">فولک</option>
+                    <option value="r&b">آر اند بی</option>
+                    <option value="reggae">رگه</option>
+                    <option value="blues">بلوز</option>
+                    <option value="metal">متال</option>
+                    <option value="alternative">آلترناتیو</option>
+                    <option value="indie">ایندی</option>
+                    <option value="latin">لاتین</option>
+                    <option value="world">ورلد</option>
+                    <option value="new-age">نیو ایج</option>
+                    <option value="soundtrack">موسیقی متن</option>
+                    <option value="children">کودک</option>
+                    <option value="comedy">کمدی</option>
+                    <option value="spoken-word">کلامی</option>
+                    <option value="other">سایر</option>
                   </select>
                 </div>
                 <div>
@@ -322,29 +595,47 @@ export default function UploadMusicPage() {
                 <label className="block text-starlight font-medium mb-3">
                   فایل صوتی
                 </label>
-                <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-nebula transition-colors cursor-pointer bg-white/5">
+                <div 
+                  className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-nebula transition-colors cursor-pointer bg-white/5"
+                  onClick={() => document.getElementById('audioFile')?.click()}
+                >
                   <div className="text-6xl mb-4">🎵</div>
                   <div className="text-starlight font-medium mb-2">
-                    فایل WAV یا FLAC خود را آپلود کنید
+                    {formData.audioFile ? formData.audioFile.name : 'فایل WAV یا FLAC خود را آپلود کنید'}
                   </div>
                   <div className="text-muted text-sm">
                     بهترین کیفیت برای پلتفرم‌های استریمینگ
                   </div>
                 </div>
-              </div>
-
-              {/* Track Title */}
-              <div>
-                <label htmlFor="trackTitle" className="block text-starlight font-medium mb-2">
-                  عنوان آهنگ
-                </label>
                 <input
-                  type="text"
-                  id="trackTitle"
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
-                  placeholder="Track Title"
+                  type="file"
+                  id="audioFile"
+                  accept="audio/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setFormData({...formData, audioFile: file});
+                  }}
+                  className="hidden"
                 />
               </div>
+
+              {/* Track Title - Only for Single */}
+              {formData.releaseType === 'single' && (
+                <div>
+                  <label htmlFor="trackTitle" className="block text-starlight font-medium mb-2">
+                    عنوان آهنگ
+                  </label>
+                  <input
+                    type="text"
+                    id="trackTitle"
+                    value={formData.trackTitle}
+                    onChange={(e) => setFormData({...formData, trackTitle: e.target.value})}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                    placeholder="Track Title"
+                    required
+                  />
+                </div>
+              )}
 
               {/* Is Cover */}
               <div>
@@ -367,32 +658,41 @@ export default function UploadMusicPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="composer" className="block text-starlight font-medium mb-2">
-                    آهنگساز (Composer)
+                    آهنگساز (Composer) - نام واقعی
                   </label>
                   <input
                     type="text"
                     id="composer"
+                    value={formData.composer}
+                    onChange={(e) => setFormData({...formData, composer: e.target.value})}
                     className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                    placeholder="نام واقعی آهنگساز"
                   />
                 </div>
                 <div>
                   <label htmlFor="lyricist" className="block text-starlight font-medium mb-2">
-                    شاعر (Lyricist)
+                    شاعر (Lyricist) - نام واقعی
                   </label>
                   <input
                     type="text"
                     id="lyricist"
+                    value={formData.lyricist}
+                    onChange={(e) => setFormData({...formData, lyricist: e.target.value})}
                     className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                    placeholder="نام واقعی شاعر"
                   />
                 </div>
                 <div>
                   <label htmlFor="arranger" className="block text-starlight font-medium mb-2">
-                    تنظیم‌کننده (Arranger)
+                    تنظیم‌کننده (Arranger) - نام واقعی
                   </label>
                   <input
                     type="text"
                     id="arranger"
+                    value={formData.arranger}
+                    onChange={(e) => setFormData({...formData, arranger: e.target.value})}
                     className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
+                    placeholder="نام واقعی تنظیم‌کننده"
                   />
                 </div>
               </div>
@@ -400,11 +700,21 @@ export default function UploadMusicPage() {
               {/* Additional Options */}
               <div className="grid grid-cols-2 gap-4">
                 <label className="flex items-center p-4 rounded-lg bg-white/5 border border-white/10">
-                  <input type="checkbox" className="ml-2" />
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isExplicit}
+                    onChange={(e) => setFormData({...formData, isExplicit: e.target.checked})}
+                    className="ml-2" 
+                  />
                   <span className="text-starlight">محتوای صریح (Explicit)</span>
                 </label>
                 <label className="flex items-center p-4 rounded-lg bg-white/5 border border-white/10">
-                  <input type="checkbox" className="ml-2" />
+                  <input 
+                    type="checkbox" 
+                    checked={formData.isInstrumental}
+                    onChange={(e) => setFormData({...formData, isInstrumental: e.target.checked})}
+                    className="ml-2" 
+                  />
                   <span className="text-starlight">بی‌کلام (Instrumental)</span>
                 </label>
               </div>
@@ -417,10 +727,32 @@ export default function UploadMusicPage() {
                 <input
                   type="text"
                   id="previewStart"
+                  value={formData.previewStart}
+                  onChange={(e) => setFormData({...formData, previewStart: e.target.value})}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50"
                   placeholder="e.g. 01:15"
                 />
               </div>
+
+              {/* Lyrics */}
+              {!formData.isInstrumental && (
+                <div>
+                  <label htmlFor="lyrics" className="block text-starlight font-medium mb-2">
+                    متن ترانه (اختیاری)
+                  </label>
+                  <textarea
+                    id="lyrics"
+                    value={formData.lyrics}
+                    onChange={(e) => setFormData({...formData, lyrics: e.target.value})}
+                    placeholder="متن ترانه خود را اینجا وارد کنید..."
+                    rows={8}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula transition-colors resize-none"
+                  />
+                  <p className="text-muted text-sm mt-1">
+                    متن ترانه برای نمایش در پلتفرم‌های موسیقی (اختیاری)
+                  </p>
+                </div>
+              )}
 
               {/* ISRC Code */}
               <div>
@@ -445,57 +777,16 @@ export default function UploadMusicPage() {
           {currentStep === 4 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-starlight mb-6">ویژگی‌های اضافی</h2>
-              <p className="text-muted mb-6">
-                این ویژگی‌ها اختیاری هستند و می‌توانند قدرت حضور موسیقی شما را افزایش دهند
-              </p>
-
-              {/* Shazam & Siri */}
-              <label className="flex items-start p-6 rounded-xl bg-white/5 border border-white/10 hover:border-nebula cursor-pointer transition-colors group">
-                <input type="checkbox" className="mt-1 ml-3" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-starlight font-bold text-lg">Shazam & Siri Integration</span>
-                    <span className="text-supernova font-bold">$2.99</span>
-                  </div>
-                  <p className="text-muted text-sm">
-                    موسیقی شما در Shazam قابل شناسایی خواهد بود و Siri می‌تواند آن را پخش کند
-                  </p>
-                </div>
-              </label>
-
-              {/* Store Maximizer */}
-              <label className="flex items-start p-6 rounded-xl bg-white/5 border border-white/10 hover:border-nebula cursor-pointer transition-colors group">
-                <input type="checkbox" className="mt-1 ml-3" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-starlight font-bold text-lg">Store Maximizer</span>
-                    <span className="text-supernova font-bold">$4.99</span>
-                  </div>
-                  <p className="text-muted text-sm">
-                    اثر شما به صورت خودکار به پلتفرم‌های جدیدی که در آینده اضافه می‌شوند ارسال خواهد شد
-                  </p>
-                </div>
-              </label>
-
-              {/* YouTube Content ID */}
-              <label className="flex items-start p-6 rounded-xl bg-white/5 border border-white/10 hover:border-nebula cursor-pointer transition-colors group">
-                <input type="checkbox" className="mt-1 ml-3" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-starlight font-bold text-lg">YouTube Content ID</span>
-                    <span className="text-supernova font-bold">20% درآمد</span>
-                  </div>
-                  <p className="text-muted text-sm">
-                    هر زمان که از موسیقی شما در یوتیوب استفاده شود، درآمد کسب کنید. ما 20% کمیسیون دریافت می‌کنیم
-                  </p>
-                </div>
-              </label>
-
-              <div className="mt-6 p-4 bg-nebula/10 border border-nebula/30 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-starlight font-medium">مجموع هزینه‌های اضافی:</span>
-                  <span className="text-supernova font-bold text-xl">$0.00</span>
-                </div>
+              
+              <div className="text-center py-12">
+                <div className="text-6xl mb-6">🚧</div>
+                <h3 className="text-2xl font-bold text-starlight mb-4">در حال توسعه</h3>
+                <p className="text-muted text-lg mb-8">
+                  ویژگی‌های اضافی مانند Shazam، Store Maximizer و YouTube Content ID در نسخه‌های آینده اضافه خواهند شد
+                </p>
+                <p className="text-muted">
+                  فعلاً می‌توانید به مرحله بعد بروید
+                </p>
               </div>
             </div>
           )}
@@ -508,44 +799,100 @@ export default function UploadMusicPage() {
               {/* Summary */}
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                 <h3 className="text-xl font-bold text-starlight mb-4">خلاصه انتشار</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
                     <span className="text-muted">نوع انتشار:</span>
-                    <span className="text-starlight font-medium mr-2">تک‌آهنگ</span>
+                    <span className="text-starlight font-medium">{formData.releaseType === 'single' ? 'تک‌آهنگ' : 'آلبوم/EP'}</span>
                   </div>
-                  <div>
+                  <div className="flex justify-between">
                     <span className="text-muted">نام هنرمند:</span>
-                    <span className="text-starlight font-medium mr-2">علی احمدی</span>
+                    <span className="text-starlight font-medium">{formData.artistName || '❌ الزامی'}</span>
                   </div>
-                  <div>
-                    <span className="text-muted">تعداد پلتفرم‌ها:</span>
-                    <span className="text-starlight font-medium mr-2">۹ پلتفرم</span>
+                  <div className="flex justify-between">
+                    <span className="text-muted">عنوان:</span>
+                    <span className="text-starlight font-medium">
+                      {formData.releaseType === 'single' 
+                        ? (formData.trackTitle || '❌ الزامی')
+                        : (formData.albumTitle || '❌ الزامی')
+                      }
+                    </span>
                   </div>
-                  <div>
+                  <div className="flex justify-between">
                     <span className="text-muted">تاریخ انتشار:</span>
-                    <span className="text-starlight font-medium mr-2">۱۵ اردیبهشت ۱۴۰۴</span>
+                    <span className="text-starlight font-medium">{formData.releaseDate || '❌ الزامی'}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">ژانر:</span>
+                    <span className="text-starlight font-medium">{formData.primaryGenre}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">فایل صوتی:</span>
+                    <span className="text-starlight font-medium">{formData.audioFile ? '✅' : '❌ الزامی'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">کاور آرت:</span>
+                    <span className="text-starlight font-medium">{formData.coverArt ? '✅' : '❌ الزامی'}</span>
+                  </div>
+                  {formData.featuredArtists && (
+                    <div className="flex justify-between">
+                      <span className="text-muted">هنرمندان همکار:</span>
+                      <span className="text-starlight font-medium">{formData.featuredArtists}</span>
+                    </div>
+                  )}
+                  {formData.composer && (
+                    <div className="flex justify-between">
+                      <span className="text-muted">آهنگساز:</span>
+                      <span className="text-starlight font-medium">{formData.composer}</span>
+                    </div>
+                  )}
+                  {formData.lyricist && (
+                    <div className="flex justify-between">
+                      <span className="text-muted">شاعر:</span>
+                      <span className="text-starlight font-medium">{formData.lyricist}</span>
+                    </div>
+                  )}
+                  {formData.arranger && (
+                    <div className="flex justify-between">
+                      <span className="text-muted">تنظیم‌کننده:</span>
+                      <span className="text-starlight font-medium">{formData.arranger}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Confirmations */}
               <div className="space-y-4">
                 <label className="flex items-start p-4 rounded-lg bg-white/5 border border-white/10">
-                  <input type="checkbox" required className="mt-1 ml-3" />
+                  <input 
+                    type="checkbox" 
+                    checked={formData.confirmRights}
+                    onChange={(e) => setFormData({...formData, confirmRights: e.target.checked})}
+                    className="mt-1 ml-3" 
+                  />
                   <span className="text-starlight">
                     تایید می‌کنم که تمام حقوق این اثر متعلق به من است و از آن استفاده مجاز دارم
                   </span>
                 </label>
                 
                 <label className="flex items-start p-4 rounded-lg bg-white/5 border border-white/10">
-                  <input type="checkbox" required className="mt-1 ml-3" />
+                  <input 
+                    type="checkbox" 
+                    checked={formData.confirmNoUnauthorized}
+                    onChange={(e) => setFormData({...formData, confirmNoUnauthorized: e.target.checked})}
+                    className="mt-1 ml-3" 
+                  />
                   <span className="text-starlight">
                     تایید می‌کنم که از تصاویر، صداها یا محتوای غیرمجاز استفاده نکرده‌ام
                   </span>
                 </label>
                 
                 <label className="flex items-start p-4 rounded-lg bg-white/5 border border-white/10">
-                  <input type="checkbox" required className="mt-1 ml-3" />
+                  <input 
+                    type="checkbox" 
+                    checked={formData.acceptTerms}
+                    onChange={(e) => setFormData({...formData, acceptTerms: e.target.checked})}
+                    className="mt-1 ml-3" 
+                  />
                   <span className="text-starlight">
                     قوانین و مقررات AstroTunes را مطالعه کرده و می‌پذیرم
                   </span>
@@ -580,8 +927,14 @@ export default function UploadMusicPage() {
                 مرحله بعد →
               </Button>
             ) : (
-              <Button variant="primary" onClick={handleSubmit} glow className="px-8">
-                🚀 ارسال نهایی
+              <Button 
+                variant="primary" 
+                onClick={handleSubmit} 
+                glow 
+                className="px-8"
+                disabled={isLoading || !formData.confirmRights || !formData.acceptTerms}
+              >
+                {isLoading ? 'در حال ارسال...' : '🚀 ارسال نهایی'}
               </Button>
             )}
           </div>

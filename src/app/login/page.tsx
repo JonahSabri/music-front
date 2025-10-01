@@ -5,18 +5,34 @@ import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic
-    console.log('Login:', formData);
+    setError('');
+    setIsLoading(true);
+
+    const result = await login(formData.email, formData.password);
+    
+    if (result.success) {
+      router.push('/dashboard');
+    } else {
+      setError(result.error || 'خطا در ورود');
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -46,6 +62,13 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-starlight font-medium mb-2">
@@ -59,6 +82,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50 transition-all"
                 placeholder="artist@example.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -75,6 +99,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-starlight placeholder-muted focus:outline-none focus:border-nebula focus:ring-2 focus:ring-nebula/50 transition-all"
                 placeholder="رمز عبور خود را وارد کنید"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -98,8 +123,8 @@ export default function LoginPage() {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" variant="primary" className="w-full" size="lg" glow>
-              ورود
+            <Button type="submit" variant="primary" className="w-full" size="lg" glow disabled={isLoading}>
+              {isLoading ? 'در حال ورود...' : 'ورود'}
             </Button>
 
             {/* Google Login */}

@@ -1,20 +1,40 @@
 import { DashboardSidebar } from './DashboardSidebar';
 import { MobileNav } from './MobileNav';
+import { useEffect, useState } from 'react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // close sidebar when route changes (MobileNav handles its own state; we ensure consistency)
+  useEffect(() => {
+    const handler = () => setMobileOpen(false);
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
   return (
     <div className="min-h-screen">
-      <DashboardSidebar />
+      <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       
-      <main className="md:mr-64 min-h-screen bg-gradient-to-br from-deep-space via-deep-space to-galaxy">
+      <main className="md:mr-72 min-h-screen bg-gradient-to-br from-deep-space via-deep-space to-galaxy">
         {/* Top Bar */}
         <div className="sticky top-0 z-30 bg-void/50 backdrop-blur-xl border-b border-white/10">
-          <div className="px-8 py-4 flex items-center justify-between">
+          <div className="px-4 md:px-8 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Hamburger - mobile only */}
+              <button
+                className="md:hidden mr-2 p-2 rounded-lg hover:bg-white/10 text-starlight"
+                onClick={() => setMobileOpen((v) => !v)}
+                aria-label="Toggle menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
               <input
                 type="search"
                 placeholder="جستجو..."
@@ -46,8 +66,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {children}
         </div>
 
-        {/* Mobile Bottom Nav */}
-        <MobileNav />
+        {/* Mobile Bottom Nav - hidden when sidebar open */}
+        {!mobileOpen && <MobileNav />}
       </main>
     </div>
   );

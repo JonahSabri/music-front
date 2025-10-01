@@ -4,8 +4,43 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function SettingsPage() {
+  const { user, authLoading } = useAuth();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router, mounted]);
+
+  if (!mounted || authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nebula mx-auto mb-4"></div>
+            <div className="text-starlight text-xl">در حال بارگذاری...</div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
   return (
     <DashboardLayout>
       <AnimatedBackground />
@@ -48,13 +83,14 @@ export default function SettingsPage() {
           </div>
         </GlassCard>
 
-        {/* Subscription */}
+        {/* Subscription - Link to subscription page */}
         <GlassCard variant="default" className="p-6 mb-8" animated>
           <h2 className="text-2xl font-bold text-starlight mb-2">اشتراک</h2>
-          <p className="text-muted mb-4">پلن فعلی: حرفه‌ای ۵۹,۹۰۰ تومان / سال</p>
+          <p className="text-muted mb-4">مدیریت اشتراک و پرداخت‌ها</p>
           <div className="flex items-center gap-3">
-            <Button variant="primary" glow>⬆️ ارتقا</Button>
-            <Button variant="outline">❌ لغو</Button>
+            <Button variant="primary" glow onClick={() => window.location.href = '/dashboard/subscription'}>
+              💎 مدیریت اشتراک
+            </Button>
           </div>
         </GlassCard>
 
